@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIT Preperation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .quiz-container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .question {
+            font-weight: bold;
+            margin: 20px 0 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #007bff;
+        }
+        .options {
+            margin-bottom: 20px;
+        }
+        .options label {
+            display: block;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .options label:hover {
+            background-color: #f0f0f0;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .feedback-item {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .correct {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .incorrect {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .explanation {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            display: none;
+        }
+        .loader {
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message {
+            padding: 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .retry-btn {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress {
+            height: 10px;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .quiz-controls {
+            margin-top: 20px;
+        }
+        .quiz-settings {
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        select, input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>IIT Preperation</h2>
+    
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h3>Mathematics Quiz</h3>
+            <button id="refresh-btn" class="btn" style="width: auto; padding: 8px 16px;">Refresh Quiz</button>
+        </div>
+        
+        <div class="quiz-settings">
+            <label for="num-questions">Number of questions:</label>
+            <select id="num-questions">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+            </select>
+        </div>
+        
+        <div id="quiz-content">
+            <div class="loader">
+                <div class="spinner"></div>
+                <p>Loading quiz questions...</p>
+                <p id="loading-status">Analyzing content and generating questions...</p>
+                <div class="progress-bar">
+                    <div class="progress" id="loading-progress"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn" id="submit-btn" disabled>Submit Answers</button>
+
+    <div class="results" id="results" style="display:none;">
+        <h3 id="score-display"></h3>
+        <div id="feedback-container"></div>
+    </div>
+
+    <script>
+        let questions = [];
+        let userAnswers = {};
+        let quizSubmitted = false;
+        let loadingTimer;
+        let progressInterval;
+
+        function simulateProgress() {
+            const progressBar = document.getElementById("loading-progress");
+            let width = 0;
+            
+            progressInterval = setInterval(() => {
+                if (width >= 95) {
+                    clearInterval(progressInterval);
+                } else {
+                    width += Math.random() * 3;
+                    if (width > 95) width = 95;
+                    progressBar.style.width = width + "%";
+                }
+            }, 300);
+        }
+
+        function completeProgress() {
+            clearInterval(progressInterval);
+            const progressBar = document.getElementById("loading-progress");
+            progressBar.style.width = "100%";
+        }
+
+        async function checkApiStatus() {
+            try {
+                updateLoadingStatus("Checking quiz service status...");
+                const response = await fetch("/api/debug/status");
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    console.log("Quiz service is working: " + data.mode);
+                    updateLoadingStatus(`Quiz service is active (${data.mode}). Generating questions...`);
+                    return true;
+                } else {
+                    console.error("API error:", data.message);
+                    document.getElementById("quiz-content").innerHTML = `
+                        <div class="error-message">
+                            <h3>⚠️ API Error</h3>
+                            <p>There was a problem with the quiz generation service:</p>
+                            <p>${data.message}</p>
+                            <button class="btn" onclick="fetchQuiz(true)">Try Again</button>
+                        </div>
+                    `;
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error checking API status:", error);
+                document.getElementById("quiz-content").innerHTML = `
+                    <div class="error-message">
+                        <h3>⚠️ Connection Error</h3>
+                        <p>Could not connect to the quiz service.</p>
+                        <p>Error: ${error.message}</p>
+                        <button class="btn" onclick="fetchQuiz(true)">Try Again</button>
+                    </div>
+                `;
+                return false;
+            }
+        }
+        
+        function updateLoadingStatus(message) {
+            const statusElement = document.getElementById("loading-status");
+            if (statusElement) {
+                statusElement.textContent = message;
+            }
+        }
+        
+        function startLoadingTimer() {
+            let seconds = 0;
+            loadingTimer = setInterval(() => {
+                seconds++;
+                if (seconds === 5) {
+                    updateLoadingStatus("Retrieving relevant content for your questions...");
+                } else if (seconds === 10) {
+                    updateLoadingStatus("Formulating challenging questions based on content...");
+                } else if (seconds === 15) {
+                    updateLoadingStatus("Almost there! Finalizing your personalized quiz...");
+                } else if (seconds >= 25) {
+                    updateLoadingStatus("This is taking longer than expected. Please be patient...");
+                }
+            }, 1000);
+        }
+        
+        function stopLoadingTimer() {
+            if (loadingTimer) {
+                clearInterval(loadingTimer);
+            }
+        }
+
+        async function fetchQuiz(forceRefresh = false) {
+            // Reset quiz state if refreshing
+            if (forceRefresh) {
+                userAnswers = {};
+                quizSubmitted = false;
+                document.getElementById("submit-btn").disabled = true;
+                document.getElementById("submit-btn").textContent = "Submit Answers";
+                document.getElementById("results").style.display = "none";
+            }
+            
+            // Show loading state
+            document.getElementById("quiz-content").innerHTML = `
+                <div class="loader">
+                    <div class="spinner"></div>
+                    <p>Loading quiz questions...</p>
+                    <p id="loading-status">Analyzing content and generating questions...</p>
+                    <div class="progress-bar">
+                        <div class="progress" id="loading-progress"></div>
+                    </div>
+                </div>
+            `;
+            
+            simulateProgress();
+            startLoadingTimer();
+            
+            const apiWorking = await checkApiStatus();
+            if (!apiWorking) {
+                document.getElementById("submit-btn").disabled = true;
+                stopLoadingTimer();
+                return;
+            }
+            
+            try {
+                const numQuestions = document.getElementById("num-questions").value;
+                updateLoadingStatus("Generating personalized quiz questions based on document analysis...");
+                
+                // Build the URL with parameters
+                let url = `/api/quiz?num=${numQuestions}`;
+                
+                const response = await fetch(url);
+                stopLoadingTimer();
+                completeProgress();
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to generate questions");
+                }
+                
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById("quiz-content").innerHTML = `
+                        <div class="error-message">
+                            <h3>Quiz Generation Error</h3>
+                            <p>${data.error}</p>
+                            <button class="btn" onclick="fetchQuiz(true)">Try Again</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                questions = data;
+                renderQuiz();
+                document.getElementById("submit-btn").disabled = true;
+            } catch (error) {
+                stopLoadingTimer();
+                console.error("Error fetching quiz:", error);
+                document.getElementById("quiz-content").innerHTML = `
+                    <div class="error-message">
+                        <h3>Failed to Load Quiz Questions</h3>
+                        <p>${error.message}</p>
+                        <button class="btn" onclick="fetchQuiz(true)">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderQuiz() {
+            let html = "";
+            
+            if (questions.length === 0) {
+                html = "<p>No questions available.</p>";
+            } else {
+                html = "<h3>Answer all questions below:</h3>";
+                
+                questions.forEach((q, index) => {
+                    html += `<div class="question" id="q${index}">${index + 1}. ${q.question}</div>`;
+                    html += `<div class="options">`;
+                    q.options.forEach((option) => {
+                        const optionId = `q${index}_${option.split(". ")[0]}`;
+                        html += `<label for="${optionId}">
+                                    <input type="radio" id="${optionId}" name="question${index}" 
+                                           value="${option}" ${quizSubmitted ? 'disabled' : ''} 
+                                           onchange="saveAnswer(${index}, '${option}')">
+                                    ${option}
+                                </label>`;
+                    });
+                    html += `</div>`;
+                });
+            }
+            
+            document.getElementById("quiz-content").innerHTML = html;
+        }
+
+        function saveAnswer(questionIndex, answer) {
+            userAnswers[questionIndex] = answer;
+            checkAllAnswered();
+        }
+
+        function checkAllAnswered() {
+            const answeredCount = Object.keys(userAnswers).length;
+            const totalQuestions = questions.length;
+            const allAnswered = answeredCount === totalQuestions;
+            
+            document.getElementById("submit-btn").disabled = !allAnswered;
+            
+            if (totalQuestions > 0) {
+                document.getElementById("submit-btn").textContent = 
+                    allAnswered ? 
+                    "Submit Answers" : 
+                    `Answer All Questions (${answeredCount}/${totalQuestions})`;
+            }
+        }
+
+        async function submitQuiz() {
+            if (quizSubmitted) return;
+            
+            document.getElementById("submit-btn").disabled = true;
+            document.getElementById("submit-btn").textContent = "Processing...";
+            
+            try {
+                // Format the answers to use numeric indexes
+                const formattedAnswers = {};
+                for (const [index, answer] of Object.entries(userAnswers)) {
+                    formattedAnswers[index.toString()] = answer;
+                }
+                
+                const payload = { 
+                    questions: questions, 
+                    answers: formattedAnswers
+                };
+                
+                console.log("Submitting answers:", payload);
+                
+                const response = await fetch("/api/submit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                // Update UI state
+                quizSubmitted = true;
+                document.getElementById("submit-btn").textContent = "Quiz Submitted";
+                
+                // Display results
+                displayResults(data);
+            } catch (error) {
+                console.error("Error submitting quiz:", error);
+                document.getElementById("submit-btn").disabled = false;
+                document.getElementById("submit-btn").textContent = "Submit Answers";
+                alert("Failed to submit quiz: " + error.message);
+            }
+        }
+        
+        function displayResults(results) {
+            const resultsDiv = document.getElementById("results");
+            const feedbackContainer = document.getElementById("feedback-container");
+            
+            // Display score
+            document.getElementById("score-display").textContent = 
+                `You scored ${results.score} out of ${results.total}`;
+            
+            // Display feedback for each question
+            let feedbackHtml = "";
+            
+            results.feedback.forEach((item, index) => {
+                const questionClass = item.correct ? "correct" : "incorrect";
+                const questionStatus = item.correct ? "✓ Correct" : "✗ Incorrect";
+                
+                feedbackHtml += `
+                    <div class="feedback-item ${questionClass}">
+                        <h4>Question ${index + 1}: ${questionStatus}</h4>
+                        <p><strong>${item.question}</strong></p>
+                        <p>Your answer: ${item.user_answer || "No answer provided"}</p>
+                        ${!item.correct ? `<p>Correct answer: ${item.correct_answer}</p>` : ''}
+                        <button class="btn" style="width: auto; padding: 5px 10px; margin: 5px 0;" 
+                                onclick="toggleExplanation(${index})">
+                            Show Explanation
+                        </button>
+                        <div id="explanation-${index}" class="explanation">
+                            <h4>Explanation:</h4>
+                            <p>${item.explanation}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            feedbackContainer.innerHTML = feedbackHtml;
+            resultsDiv.style.display = "block";
+            
+            // Scroll to results
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function toggleExplanation(index) {
+            const explanation = document.getElementById(`explanation-${index}`);
+            const button = explanation.previousElementSibling;
+            
+            if (explanation.style.display === "block") {
+                explanation.style.display = "none";
+                button.textContent = "Show Explanation";
+            } else {
+                explanation.style.display = "block";
+                button.textContent = "Hide Explanation";
+            }
+        }
+        
+        // Initialize the page
+        document.addEventListener("DOMContentLoaded", function() {
+            // Set up event listeners
+            document.getElementById("submit-btn").addEventListener("click", submitQuiz);
+            document.getElementById("refresh-btn").addEventListener("click", () => fetchQuiz(true));
+            
+            // Fetch quiz on page load
+            fetchQuiz();
+        });
+    </script>
+</body>
+</html>

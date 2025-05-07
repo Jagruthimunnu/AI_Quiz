@@ -1,0 +1,385 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>PDF Quiz Generator</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: #f8f9fa;
+                }
+                .quiz-container {
+                    background-color: white;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    padding: 20px 30px;
+                    margin-bottom: 30px;
+                }
+                h1 {
+                    color: #2c3e50;
+                    text-align: center;
+                    margin-bottom: 30px;
+                }
+                .question {
+                    margin-bottom: 25px;
+                    padding-bottom: 15px;
+                    border-bottom: 1px solid #e9ecef;
+                }
+                .question-text {
+                    font-weight: 600;
+                    font-size: 1.1rem;
+                    margin-bottom: 15px;
+                    color: #2c3e50;
+                }
+                .options {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                .option {
+                    display: flex;
+                    align-items: flex-start;
+                    padding: 10px;
+                    border-radius: 5px;
+                    background-color: #f1f3f5;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                }
+                .option:hover {
+                    background-color: #e9ecef;
+                }
+                input[type="radio"] {
+                    margin-right: 10px;
+                    margin-top: 4px;
+                }
+                label {
+                    display: inline-block;
+                    cursor: pointer;
+                    flex: 1;
+                }
+                .result-container {
+                    display: none;
+                    background-color: white;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    padding: 20px 30px;
+                }
+                .score {
+                    text-align: center;
+                    font-size: 1.5rem;
+                    margin-bottom: 20px;
+                    color: #2c3e50;
+                }
+                .feedback {
+                    margin-top: 20px;
+                }
+                .feedback-item {
+                    margin-bottom: 20px;
+                    padding: 15px;
+                    border-radius: 5px;
+                }
+                .correct {
+                    background-color: #d4edda;
+                    border: 1px solid #c3e6cb;
+                }
+                .incorrect {
+                    background-color: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                }
+                .explanation {
+                    margin-top: 10px;
+                    font-style: italic;
+                    color: #5a6268;
+                }
+                button {
+                    display: block;
+                    width: 200px;
+                    padding: 10px;
+                    margin: 20px auto;
+                    background-color: #4c6ef5;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 1rem;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                }
+                button:hover {
+                    background-color: #3b5bdb;
+                }
+                .progress {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 20px;
+                    color: #6c757d;
+                }
+                .loader {
+                    display: none;
+                    text-align: center;
+                    margin: 20px 0;
+                }
+                .loader-spinner {
+                    border: 5px solid #f3f3f3;
+                    border-top: 5px solid #3498db;
+                    border-radius: 50%;
+                    width: 50px;
+                    height: 50px;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>PDF Quiz Generator</h1>
+            
+            <div class="quiz-container" id="quiz-container">
+                <div class="progress">
+                    <span>Question <span id="current-question">1</span> of <span id="total-questions">0</span></span>
+                    <span id="timer">Time: 00:00</span>
+                </div>
+                
+                <div id="questions-container">
+                    <!-- Questions will be inserted here -->
+                </div>
+                
+                <div class="loader" id="loader">
+                    <div class="loader-spinner"></div>
+                    <p>Evaluating your answers...</p>
+                </div>
+                
+                <button id="submit-btn">Submit Answers</button>
+            </div>
+            
+            <div class="result-container" id="result-container">
+                <div class="score" id="score-display"></div>
+                <div class="feedback" id="feedback-container">
+                    <!-- Feedback will be inserted here -->
+                </div>
+                <button id="retry-btn">Try Again</button>
+            </div>
+            
+            <script>
+                // Quiz data
+                const quizData = [{"question": "If a point lies on the y-axis, what is the value of k in the equation 5 : k : k : k ?", "options": {"A": "A) 3", "B": "B) 4", "C": "C) 5", "D": "D) 6"}, "correct_answer": "C", "explanation": "The correct answer is C) 5 because if a point lies on the y-axis, its x-coordinate (the abscissa) is 0. Therefore, in the ratio 5 : k : k : k, we know that 5x = 0 and 2kx = 0. Since 5x cannot be 0, it means that one of the values of k must also be 0. The only way to satisfy this condition is for the ratio to be a single value (k) as in 5 : k : k : k, which implies that k = 5."}, {"question": "What is the distance formula used for in coordinate geometry?", "options": {"A": "a) To find the area of a triangle", "B": "b) To determine if three points are collinear", "C": "c) To calculate the distance between two points", "D": "d) To find the coordinates of a point that divides a line segment"}, "correct_answer": "c", "explanation": "The correct answer is c) To calculate the distance between two points. The distance formula in coordinate geometry is used to find the distance between two points in a plane, given their x and y coordinates. It is derived from the Pythagorean theorem and is essential for various applications in geometry, engineering, and other fields."}, {"question": "If two lines intersect at a point and form an angle of 90 degrees between them, what can be concluded about their slopes?", "options": {"A": "The slopes must be equal.", "B": "The slopes cannot be determined from the given information.", "C": "Since they are perpendicular to each other, one slope is the negative reciprocal of the other.", "D": "The lines are parallel."}, "correct_answer": "C", "explanation": "This question tests understanding of important concepts in coordinate geometry. The correct answer is based on the property that when two lines intersect at a point and form an angle of 90 degrees between them, one line must be perpendicular to the other. This means that if we find the slopes of both lines, they will be negative reciprocals of each other. The other options are incorrect because having equal or parallel lines doesn't guarantee an intersection at a right angle, and the relationship between the angles formed by two intersecting lines and their slopes is not relevant to whether those slopes can be determined from the given information."}, {"question": "If a point P(x, y) divides the line segment joining A(1, 2) and B(4, 5) in the ratio m:n = 3:5, what is the value of x?", "options": {"A": "A) 3", "B": "B) 4", "C": "C) (9/8)x + 1", "D": "D) 2"}, "correct_answer": "C", "explanation": "To solve this problem, we can use the section formula. The x-coordinate of point P(x, y) is given by x = \frac{mx_2+nx_1}{m+n}, where (x1, y1) are the coordinates of A(1, 2) and (x2, y2) are the coordinates of B(4, 5). Plugging in the values m = 3 and n = 5, we get x = \frac{3(4)+5(1)}{3+5} = \frac{17}{8}. Therefore, option C is the correct answer. Options A and B are incorrect because they do not represent the correct value of x. Option D is also incorrect because it represents a different equation for x altogether."}, {"question": "What theorem do you use to calculate the distance between two points that lie on a coordinate plane but are not on the x-axis or y-axis?", "options": {"A": "Distance Formula", "B": "Pythagoras Theorem", "C": "Coordinate Geometry Theorem", "D": "Triangle Inequality Theorem"}, "correct_answer": "B", "explanation": "The correct answer is Pythagoras Theorem. This theorem is used to calculate the distance between two points that lie on a coordinate plane but are not on the x-axis or y-axis. It states that for any right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) is equal to the sum of the squares of the lengths of the other two sides. In the context of coordinate geometry, this can be used to find the distance between two points by creating a right-angled triangle with the x-axis and y-axis as its legs."}];
+                let userAnswers = {};
+                let startTime = new Date();
+                let timerInterval;
+                
+                // DOM elements
+                const quizContainer = document.getElementById('quiz-container');
+                const questionsContainer = document.getElementById('questions-container');
+                const submitBtn = document.getElementById('submit-btn');
+                const resultContainer = document.getElementById('result-container');
+                const scoreDisplay = document.getElementById('score-display');
+                const feedbackContainer = document.getElementById('feedback-container');
+                const retryBtn = document.getElementById('retry-btn');
+                const currentQuestionSpan = document.getElementById('current-question');
+                const totalQuestionsSpan = document.getElementById('total-questions');
+                const timerSpan = document.getElementById('timer');
+                const loader = document.getElementById('loader');
+                
+                // Initialize the quiz
+                function initQuiz() {
+                    userAnswers = {};
+                    startTime = new Date();
+                    updateTimer();
+                    timerInterval = setInterval(updateTimer, 1000);
+                    
+                    totalQuestionsSpan.textContent = quizData.length;
+                    renderQuestions();
+                    
+                    quizContainer.style.display = 'block';
+                    resultContainer.style.display = 'none';
+                }
+                
+                // Update timer display
+                function updateTimer() {
+                    const now = new Date();
+                    const timeDiff = Math.floor((now - startTime) / 1000);
+                    const minutes = Math.floor(timeDiff / 60).toString().padStart(2, '0');
+                    const seconds = (timeDiff % 60).toString().padStart(2, '0');
+                    timerSpan.textContent = `Time: ${minutes}:${seconds}`;
+                }
+                
+                // Render quiz questions
+                function renderQuestions() {
+                    questionsContainer.innerHTML = '';
+                    
+                    quizData.forEach((questionData, index) => {
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = 'question';
+                        questionDiv.dataset.questionIndex = index;
+                        
+                        const questionText = document.createElement('div');
+                        questionText.className = 'question-text';
+                        questionText.textContent = `${index + 1}. ${questionData.question}`;
+                        
+                        const optionsDiv = document.createElement('div');
+                        optionsDiv.className = 'options';
+                        
+                        // Create radio options
+                        const optionsLetters = ['A', 'B', 'C', 'D'];
+                        let options = questionData.options;
+                        
+                        // Handle both array and object formats
+                        if (Array.isArray(options)) {
+                            const tempOptions = {};
+                            optionsLetters.forEach((letter, i) => {
+                                if (i < options.length) {
+                                    tempOptions[letter] = options[i];
+                                }
+                            });
+                            options = tempOptions;
+                        }
+                        
+                        Object.entries(options).forEach(([letter, text]) => {
+                            const optionDiv = document.createElement('div');
+                            optionDiv.className = 'option';
+                            
+                            const radioInput = document.createElement('input');
+                            radioInput.type = 'radio';
+                            radioInput.name = `question-${index}`;
+                            radioInput.id = `question-${index}-${letter}`;
+                            radioInput.value = letter;
+                            
+                            const label = document.createElement('label');
+                            label.htmlFor = `question-${index}-${letter}`;
+                            label.textContent = `${letter}. ${text}`;
+                            
+                            radioInput.addEventListener('change', () => {
+                                userAnswers[index] = letter;
+                                updateCurrentQuestion(index + 1);
+                            });
+                            
+                            optionDiv.appendChild(radioInput);
+                            optionDiv.appendChild(label);
+                            optionsDiv.appendChild(optionDiv);
+                        });
+                        
+                        questionDiv.appendChild(questionText);
+                        questionDiv.appendChild(optionsDiv);
+                        questionsContainer.appendChild(questionDiv);
+                    });
+                }
+                
+                // Update current question display
+                function updateCurrentQuestion(number) {
+                    currentQuestionSpan.textContent = number;
+                }
+                
+                // Handle quiz submission
+                function submitQuiz() {
+                    clearInterval(timerInterval);
+                    
+                    // Show loading indicator
+                    loader.style.display = 'block';
+                    submitBtn.style.display = 'none';
+                    
+                    // Convert user answers to array format for evaluation
+                    const answersArray = [];
+                    for (let i = 0; i < quizData.length; i++) {
+                        answersArray.push(userAnswers[i] || '');
+                    }
+                    
+                    // Simulate server evaluation (could be replaced with actual API call)
+                    setTimeout(() => {
+                        const results = evaluateQuiz(answersArray);
+                        displayResults(results);
+                        
+                        // Hide loader
+                        loader.style.display = 'none';
+                    }, 1000);
+                }
+                
+                // Evaluate quiz answers
+                function evaluateQuiz(answers) {
+                    let correctCount = 0;
+                    const feedback = [];
+                    
+                    quizData.forEach((question, index) => {
+                        const userAnswer = answers[index];
+                        const correctAnswer = question.correct_answer;
+                        const isCorrect = userAnswer.toUpperCase() === correctAnswer.toUpperCase();
+                        
+                        if (isCorrect) {
+                            correctCount++;
+                        }
+                        
+                        feedback.push({
+                            question_number: index + 1,
+                            question: question.question,
+                            your_answer: userAnswer.toUpperCase(),
+                            correct_answer: correctAnswer.toUpperCase(),
+                            is_correct: isCorrect,
+                            explanation: isCorrect ? "Correct!" : question.explanation
+                        });
+                    });
+                    
+                    const scorePercentage = (correctCount / quizData.length) * 100;
+                    
+                    return {
+                        total_questions: quizData.length,
+                        correct_count: correctCount,
+                        score_percentage: scorePercentage,
+                        feedback: feedback
+                    };
+                }
+                
+                // Display quiz results
+                function displayResults(results) {
+                    // Display score
+                    scoreDisplay.textContent = `Score: ${results.correct_count} / ${results.total_questions} (${Math.round(results.score_percentage)}%)`;
+                    
+                    // Display feedback for each question
+                    feedbackContainer.innerHTML = '';
+                    
+                    results.feedback.forEach(item => {
+                        const feedbackDiv = document.createElement('div');
+                        feedbackDiv.className = `feedback-item ${item.is_correct ? 'correct' : 'incorrect'}`;
+                        
+                        const questionPara = document.createElement('p');
+                        questionPara.innerHTML = `<strong>Question ${item.question_number}:</strong> ${item.question}`;
+                        
+                        const answerPara = document.createElement('p');
+                        if (item.is_correct) {
+                            answerPara.innerHTML = `<strong>Your answer:</strong> ${item.your_answer} ✓`;
+                        } else {
+                            answerPara.innerHTML = `<strong>Your answer:</strong> ${item.your_answer} ✗<br><strong>Correct answer:</strong> ${item.correct_answer}`;
+                        }
+                        
+                        const explanationPara = document.createElement('p');
+                        explanationPara.className = 'explanation';
+                        explanationPara.textContent = item.explanation;
+                        
+                        feedbackDiv.appendChild(questionPara);
+                        feedbackDiv.appendChild(answerPara);
+                        feedbackDiv.appendChild(explanationPara);
+                        feedbackContainer.appendChild(feedbackDiv);
+                    });
+                    
+                    // Show results container
+                    quizContainer.style.display = 'none';
+                    resultContainer.style.display = 'block';
+                }
+                
+                // Event listeners
+                submitBtn.addEventListener('click', submitQuiz);
+                retryBtn.addEventListener('click', initQuiz);
+                
+                // Initialize quiz on page load
+                initQuiz();
+            </script>
+        </body>
+        </html>
+        
